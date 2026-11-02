@@ -14,12 +14,25 @@ export interface FlashCard {
  * 4. 键值对：key: value / key：value
  * 5. 定义式：term — definition / term —— definition
  * 6. 空行分段
+ *
+ * 分派规则（确定性）：策略按"格式信号强度"从高到低排列，首个产出卡片的
+ * 策略即被采用，不再比较卡片数量：
+ *   1. parseQA          显式问答标记，最强信号，≥1 个完整问答对即采用。
+ *                       Q/A/问/答/问题/答案/Question/Answer 是保留键，
+ *                       键值对策略绝不匹配这些键，问答格式不会被劫持。
+ *   2. parseNumberedList 显式编号标记
+ *   3. parseBulletList   显式符号标记
+ *   4. parseKeyValue     通用 key: value 结构
+ *   5. parseDefinition   term —— definition
+ *   6. parseParagraphs   空行分段
+ * 歧义输入的确定性行为：结构标记强者优先（问答 > 编号 > 符号 > 键值 >
+ * 定义 > 分段）；混合内容（如前言 + 问答对）按最强信号定格式，不匹配
+ * 该格式的散行会被舍弃。全部策略未命中时按句子分割兜底。
  */
 export function parseToCards(text: string): FlashCard[] {
   const trimmed = text.trim();
   if (!trimmed) return [];
 
-  // 尝试各种解析策略，选择产出卡片最多的
   const strategies = [
     parseQA,
     parseNumberedList,
@@ -29,29 +42,34 @@ export function parseToCards(text: string): FlashCard[] {
     parseParagraphs,
   ];
 
-  let best: FlashCard[] = [];
   for (const strategy of strategies) {
     const cards = strategy(trimmed);
-    if (cards.length > best.length) {
-      best = cards;
-    }
+    if (cards.length > 0) return cards;
   }
 
-  // 如果所有策略都只产出 0-1 张卡片，尝试按句子分割
-  if (best.length <= 1) {
-    const sentenceCards = parseSentences(trimmed);
-    if (sentenceCards.length > best.length) {
-      best = sentenceCards;
-    }
-  }
-
-  return best;
+  // 兜底：按句子分割
+  return parseSentences(trimmed);
 }
 
 let idCounter = 0;
 function makeId(): string {
   return `card_${Date.now()}_${idCounter++}`;
 }
+
+/**
+ * 键值对保留键：问答格式标记。这些键命中 kvPattern 时不产出卡片，
+ * 统一交给 parseQA 处理（大小写不敏感）。
+ */
+const RESERVED_KV_KEYS = new Set([
+  "q",
+  "a",
+  "问",
+  "答",
+  "问题",
+  "答案",
+  "question",
+  "answer",
+]);
 
 /** 问答对解析：Q:/A: 或 问：/答： */
 function parseQA(text: string): FlashCard[] {
@@ -135,7 +153,9 @@ function parseKeyValue(text: string): FlashCard[] {
 
   for (const line of lines) {
     const m = line.match(kvPattern);
-    if (m) {
+    // 保留键不产出键值对卡片：问答标记（Q/A/问/答/…）归 parseQA 处理，
+    // 避免键值对策略劫持问答格式（每个问答对会被拆成 front="Q"/"答" 的废卡）
+    if (m && !RESERVED_KV_KEYS.has(m[1].trim().toLowerCase())) {
       cards.push({
         id: makeId(),
         front: m[1].trim(),

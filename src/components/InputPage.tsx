@@ -1,6 +1,6 @@
-import { useState } from "react";
-
 interface InputPageProps {
+  text: string;
+  onTextChange: (text: string) => void;
   onSubmit: (text: string) => void;
 }
 
@@ -10,9 +10,7 @@ const EXAMPLE_TEXT = `1. 光合作用：植物利用光能将二氧化碳和水�
 4. 牛顿第一定律：物体在不受外力作用时，保持静止或匀速直线运动状态
 5. 勾股定理：直角三角形中，两直角边的平方和等于斜边的平方，即 a² + b² = c²`;
 
-export default function InputPage({ onSubmit }: InputPageProps) {
-  const [text, setText] = useState("");
-
+export default function InputPage({ text, onTextChange, onSubmit }: InputPageProps) {
   const handleSubmit = () => {
     if (text.trim()) {
       onSubmit(text);
@@ -20,7 +18,7 @@ export default function InputPage({ onSubmit }: InputPageProps) {
   };
 
   const handleExample = () => {
-    setText(EXAMPLE_TEXT);
+    onTextChange(EXAMPLE_TEXT);
   };
 
   return (
@@ -39,7 +37,7 @@ export default function InputPage({ onSubmit }: InputPageProps) {
         <textarea
           className="paper-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => onTextChange(e.target.value)}
           placeholder={`在这里写下你的知识点...\n\n支持多种格式：\n• 编号列表：1. 知识点内容\n• 问答对：Q: 问题 / A: 答案\n• 键值对：名词：解释\n• 定义式：概念 —— 定义\n• 或者直接分段书写`}
           rows={14}
         />

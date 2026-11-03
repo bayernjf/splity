@@ -7,6 +7,7 @@ type AppView = "input" | "cards";
 
 export default function App() {
   const [view, setView] = useState<AppView>("input");
+  const [text, setText] = useState("");
   const [cards, setCards] = useState<FlashCard[]>([]);
 
   const handleSubmit = (text: string) => {
@@ -20,7 +21,7 @@ export default function App() {
   return (
     <div className="app">
       {view === "input" ? (
-        <InputPage onSubmit={handleSubmit} />
+        <InputPage text={text} onTextChange={setText} onSubmit={handleSubmit} />
       ) : (
         <CardView cards={cards} onBack={() => setView("input")} />
       )}

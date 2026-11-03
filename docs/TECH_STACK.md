@@ -29,4 +29,5 @@ npm run preview # 预览构建产物
 ## 注意点
 - 分割逻辑是产品核心，改解析规则时优先补样例文本覆盖上述 6 种格式，避免回归。
 - 无后端，数据存本地；若将来加同步，需先明确存储与冲突策略。
+- 仓库刻意不保留数据库迁移约定；删除理由与重建条件见 `docs/decisions/2026-11-03-drop-migration-convention.md`。
 - 项目约定见根目录 `README.md` 与 `handoff.md`。

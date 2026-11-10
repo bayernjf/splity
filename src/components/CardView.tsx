@@ -6,6 +6,10 @@ interface CardViewProps {
   onBack: () => void;
 }
 
+// Space/Enter 在这些元素内是控件自身的激活键，容器不应劫持。
+const INTERACTIVE_SELECTOR =
+  "button, input, textarea, select, a[href], [contenteditable='true'], [contenteditable=''], [role='button'], [role='menuitem'], [role='tab']";
+
 export default function CardView({ cards, onBack }: CardViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -43,7 +47,17 @@ export default function CardView({ cards, onBack }: CardViewProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === " " || e.key === "Enter") {
+      const isActivationKey = e.key === " " || e.key === "Enter";
+      // 焦点在按钮/输入框等交互元素上时，Space/Enter 属于控件自身的激活键，
+      // 不能被容器抢占，否则键盘用户无法用键盘触发聚焦的按钮。
+      if (
+        isActivationKey &&
+        e.target instanceof Element &&
+        e.target.closest(INTERACTIVE_SELECTOR)
+      ) {
+        return;
+      }
+      if (isActivationKey) {
         e.preventDefault();
         setFlipped((f) => !f);
       } else if (e.key === "ArrowRight") {
